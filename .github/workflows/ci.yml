@@ -31,7 +31,11 @@ jobs:
       - name: Verify go.mod/go.sum tidy
         run: |
           go mod tidy
-          git diff --exit-code go.mod go.sum
+          files="go.mod"
+          if [ -f go.sum ]; then
+            files="$files go.sum"
+          fi
+          git diff --exit-code $files
 
       - name: Check formatting
         run: |
