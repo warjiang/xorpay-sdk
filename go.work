@@ -1,0 +1,13 @@
+go 1.25.0
+
+use (
+	.
+	./examples/gin_app
+	./examples/notify_verify
+	./examples/pay_barcode
+	./examples/pay_cashier
+	./examples/pay_jsapi
+	./examples/pay_native
+	./examples/query
+	./examples/refund
+)

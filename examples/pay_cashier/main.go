@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	xorpay "github.com/warjiang/xorpay-sdk"
+	"github.com/warjiang/xorpay-sdk"
 	"github.com/warjiang/xorpay-sdk/examples/internalcfg"
 )
 

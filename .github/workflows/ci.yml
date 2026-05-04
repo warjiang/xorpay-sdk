@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.24.x", "1.25.x"]
+        go-version: ["1.25.x"]
 
     steps:
       - name: Checkout
@@ -28,13 +28,21 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true
 
-      - name: Verify go.mod/go.sum tidy
+      - name: Verify workspace and modules tidy
         run: |
-          go mod tidy
-          files="go.mod"
+          go work sync
+          files="go.work go.mod"
+          if [ -f go.work.sum ]; then
+            files="$files go.work.sum"
+          fi
           if [ -f go.sum ]; then
             files="$files go.sum"
           fi
+          for f in examples/*/go.mod examples/*/go.sum; do
+            if [ -f "$f" ]; then
+              files="$files $f"
+            fi
+          done
           git diff --exit-code $files
 
       - name: Check formatting
