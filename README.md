@@ -33,7 +33,7 @@ import (
     "context"
     "fmt"
 
-    xorpay "github.com/warjiang/xorpay-sdk"
+    "github.com/warjiang/xorpay-sdk"
 )
 
 func main() {

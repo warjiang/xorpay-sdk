@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	xorpay "github.com/warjiang/xorpay-sdk"
+	"github.com/warjiang/xorpay-sdk"
 	"github.com/warjiang/xorpay-sdk/examples/internalcfg"
 )
 

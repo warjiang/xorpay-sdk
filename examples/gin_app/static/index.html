@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XorPay 支付演示</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        header h1 { font-size: 28px; color: #1a1a1a; margin-bottom: 8px; }
+        header p { color: #666; font-size: 14px; }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 12px;
+        }
+        .tab {
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            background: #f0f2f5;
+            border: none;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: #e4e6eb; }
+        .tab.active {
+            background: #1677ff;
+            color: #fff;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #1677ff;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #1677ff;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #4096ff; }
+        .btn-success {
+            background: #52c41a;
+            color: #fff;
+        }
+        .btn-success:hover { background: #73d13d; }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            display: none;
+        }
+        .result-box.error {
+            background: #fff2f0;
+            border-color: #ffccc7;
+        }
+        .result-box.show { display: block; }
+
+        #qrcode {
+            margin: 16px auto;
+            text-align: center;
+        }
+        #qrcode img {
+            display: inline-block !important;
+        }
+
+        .pay-link {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 24px;
+            background: #1677ff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .pay-link:hover { background: #4096ff; }
+
+        .order-list {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        .order-item:last-child { border-bottom: none; }
+        .order-id { font-family: monospace; color: #1677ff; }
+        .status {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-created { background: #e6f4ff; color: #0958d9; }
+        .status-paid { background: #f6ffed; color: #389e0d; }
+        .status-refunded { background: #fff7e6; color: #d46b08; }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #1677ff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: #52c41a; }
+        .toast.error { background: #ff4d4f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔷 XorPay 支付演示</h1>
+            <p>选择支付方式创建订单，体验完整支付流程</p>
+        </header>
+
+        <div class="card">
+            <div class="card-title">💳 创建支付订单</div>
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('native')">扫码支付</button>
+                <button class="tab" onclick="switchTab('cashier')">收银台支付</button>
+                <button class="tab" onclick="switchTab('barcode')">付款码支付</button>
+            </div>
+
+            <!-- Native Pay -->
+            <div id="tab-native" class="tab-content active">
+                <form onsubmit="return createNativePay(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>商品名称</label>
+                            <input type="text" name="name" value="测试商品" required>
+                        </div>
+                        <div class="form-group">
+                            <label>金额（元）</label>
+                            <input type="text" name="price" value="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>订单号</label>
+                            <input type="text" name="order_id" id="native-order-id" required>
+                        </div>
+                        <div class="form-group">
+                            <label>用户标识</label>
+                            <input type="text" name="order_uid" value="user-001">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>支付类型</label>
+                        <select name="pay_type">
+                            <option value="native">微信扫码</option>
+                            <option value="alipay">支付宝扫码</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">创建订单并生成二维码</button>
+                </form>
+                <div id="result-native" class="result-box">
+                    <div id="qrcode"></div>
+                    <p style="text-align:center;color:#666;font-size:13px;margin-top:8px;">
+                        <span class="spinner" id="native-spinner"></span>
+                        <span id="native-status">等待支付...</span>
+                    </p>
+                    <p style="text-align:center;font-size:12px;color:#999;margin-top:8px;">
+                        AO ID: <span id="native-aoid" class="order-id"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Cashier Pay -->
+            <div id="tab-cashier" class="tab-content">
+                <form onsubmit="return createCashierPay(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>商品名称</label>
+                            <input type="text" name="name" value="会员充值" required>
+                        </div>
+                        <div class="form-group">
+                            <label>金额（元）</label>
+                            <input type="text" name="price" value="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>订单号</label>
+                            <input type="text" name="order_id" id="cashier-order-id" required>
+                        </div>
+                        <div class="form-group">
+                            <label>用户标识</label>
+                            <input type="text" name="order_uid" value="user-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>支付类型</label>
+                            <select name="pay_type">
+                                <option value="jsapi">微信 JSAPI</option>
+                                <option value="alipay">支付宝 H5</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>OpenID（微信必填）</label>
+                            <input type="text" name="openid" placeholder="微信环境下必填">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">创建订单</button>
+                </form>
+                <div id="result-cashier" class="result-box">
+                    <p>订单已创建，点击下方按钮前往支付页面：</p>
+                    <a id="cashier-link" href="#" target="_blank" class="pay-link">前往支付</a>
+                    <p style="margin-top:12px;font-size:12px;color:#999;">
+                        AO ID: <span id="cashier-aoid" class="order-id"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Barcode Pay -->
+            <div id="tab-barcode" class="tab-content">
+                <form onsubmit="return createBarcodePay(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>商品名称</label>
+                            <input type="text" name="name" value="门店消费" required>
+                        </div>
+                        <div class="form-group">
+                            <label>金额（元）</label>
+                            <input type="text" name="price" value="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>订单号</label>
+                            <input type="text" name="order_id" id="barcode-order-id" required>
+                        </div>
+                        <div class="form-group">
+                            <label>用户标识</label>
+                            <input type="text" name="order_uid" value="user-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>支付类型</label>
+                            <select name="pay_type">
+                                <option value="wechat">微信付款码</option>
+                                <option value="alipay">支付宝付款码</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>付款码</label>
+                            <input type="text" name="barcode" placeholder="用户出示的付款码" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">扫码扣款</button>
+                </form>
+                <div id="result-barcode" class="result-box"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔍 订单查询</div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;">
+                <input type="text" id="query-input" placeholder="输入订单号" style="flex:1;padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;">
+                <button onclick="queryOrder()" class="btn btn-success">查询</button>
+            </div>
+            <div id="query-result" class="result-box"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📋 最近订单</div>
+            <div class="order-list" id="order-list">
+                <p style="color:#999;text-align:center;padding:20px;">暂无订单</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // 生成随机订单号
+        function genOrderId(prefix) {
+            const ts = Date.now().toString(36);
+            const rand = Math.random().toString(36).substr(2, 4);
+            return `${prefix}-${ts}-${rand}`.toUpperCase();
+        }
+
+        // 初始化订单号
+        document.getElementById('native-order-id').value = genOrderId('NAT');
+        document.getElementById('cashier-order-id').value = genOrderId('CSH');
+        document.getElementById('barcode-order-id').value = genOrderId('BAR');
+
+        // Tab 切换
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + name).classList.add('active');
+        }
+
+        // Toast 提示
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // 表单数据收集
+        function collectForm(form) {
+            const data = {};
+            new FormData(form).forEach((v, k) => { if (v) data[k] = v; });
+            return data;
+        }
+
+        // 记录订单到 localStorage
+        function recordOrder(orderId, type) {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            orders.unshift({ orderId, type, time: Date.now() });
+            localStorage.setItem('orders', JSON.stringify(orders.slice(0, 50)));
+            renderOrderList();
+        }
+
+        // 渲染订单列表
+        async function renderOrderList() {
+            const list = document.getElementById('order-list');
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            if (orders.length === 0) {
+                list.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">暂无订单</p>';
+                return;
+            }
+            // 查询每个订单的最新状态
+            const items = await Promise.all(orders.map(async o => {
+                try {
+                    const res = await fetch(`/api/orders/${o.orderId}`).then(r => r.json());
+                    const status = res.status || 'unknown';
+                    const statusClass = status === 'paid' ? 'status-paid' : status === 'created' ? 'status-created' : 'status-refunded';
+                    return `<div class="order-item">
+                        <div>
+                            <div><span class="order-id">${o.orderId}</span> <span style="color:#999;font-size:12px;">(${o.type})</span></div>
+                            <div style="color:#999;font-size:12px;margin-top:2px;">AOID: ${res.aoid || '-'}</div>
+                        </div>
+                        <span class="status ${statusClass}">${status}</span>
+                    </div>`;
+                } catch {
+                    return `<div class="order-item">
+                        <div><span class="order-id">${o.orderId}</span></div>
+                        <span class="status status-created">created</span>
+                    </div>`;
+                }
+            }));
+            list.innerHTML = items.join('');
+        }
+
+        // Native 支付
+        let nativePollTimer = null;
+        async function createNativePay(e) {
+            e.preventDefault();
+            clearInterval(nativePollTimer);
+            const data = collectForm(e.target);
+            try {
+                const res = await fetch('/api/pay/native', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).then(r => r.json());
+
+                if (res.error) throw new Error(res.error);
+
+                const resultBox = document.getElementById('result-native');
+                resultBox.classList.add('show');
+                document.getElementById('native-aoid').textContent = res.aoid;
+                document.getElementById('native-status').textContent = '等待支付...';
+                document.getElementById('native-spinner').style.display = 'inline-block';
+
+                // 生成二维码
+                document.getElementById('qrcode').innerHTML = '';
+                const qrUrl = res.info.code_url || res.info.qr;
+                new QRCode(document.getElementById('qrcode'), {
+                    text: qrUrl,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                recordOrder(data.order_id, 'native');
+                showToast('二维码已生成，请扫码支付', 'success');
+
+                // 轮询查询支付状态
+                nativePollTimer = setInterval(async () => {
+                    try {
+                        const q = await fetch(`/api/orders/${data.order_id}`).then(r => r.json());
+                        if (q.status === 'paid') {
+                            clearInterval(nativePollTimer);
+                            document.getElementById('native-status').textContent = '✅ 支付成功！';
+                            document.getElementById('native-spinner').style.display = 'none';
+                            renderOrderList();
+                            showToast('支付成功！', 'success');
+                        }
+                    } catch {}
+                }, 2000);
+
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+            return false;
+        }
+
+        // Cashier 支付
+        async function createCashierPay(e) {
+            e.preventDefault();
+            const data = collectForm(e.target);
+            try {
+                const res = await fetch('/api/pay/cashier', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).then(r => r.json());
+
+                if (res.error) throw new Error(res.error);
+
+                const resultBox = document.getElementById('result-cashier');
+                resultBox.classList.add('show');
+                document.getElementById('cashier-aoid').textContent = res.aoid;
+                document.getElementById('cashier-link').href = res.info.url || res.info.qr;
+                recordOrder(data.order_id, 'cashier');
+                showToast('订单已创建，请前往支付', 'success');
+                renderOrderList();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+            return false;
+        }
+
+        // Barcode 支付
+        async function createBarcodePay(e) {
+            e.preventDefault();
+            const data = collectForm(e.target);
+            try {
+                const res = await fetch('/api/pay/barcode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).then(r => r.json());
+
+                if (res.error) throw new Error(res.error);
+
+                const resultBox = document.getElementById('result-barcode');
+                resultBox.className = 'result-box show';
+                resultBox.innerHTML = `<p><strong>支付结果：</strong>${res.status}</p><p>AO ID: <span class="order-id">${res.aoid}</span></p><p>详情: ${res.detail || '-'}</p>`;
+                recordOrder(data.order_id, 'barcode');
+                showToast('扣款请求已提交', 'success');
+                renderOrderList();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+            return false;
+        }
+
+        // 查询订单
+        async function queryOrder() {
+            const orderId = document.getElementById('query-input').value.trim();
+            if (!orderId) { showToast('请输入订单号', 'error'); return; }
+            try {
+                const res = await fetch(`/api/orders/${orderId}`).then(r => r.json());
+                const box = document.getElementById('query-result');
+                box.className = 'result-box show';
+                box.innerHTML = `<pre style="font-size:13px;overflow-x:auto;">${JSON.stringify(res, null, 2)}</pre>`;
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // 初始渲染
+        renderOrderList();
+    </script>
+</body>
+</html>
