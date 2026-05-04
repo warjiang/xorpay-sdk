@@ -13,6 +13,8 @@ type Config struct {
 	AppID     string
 	AppSecret string
 	BaseURL   string
+	NotifyURL string
+	ReturnURL string
 }
 
 type PayRequest struct {

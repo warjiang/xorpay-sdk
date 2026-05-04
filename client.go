@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -23,6 +24,8 @@ type Client struct {
 	appID     string
 	appSecret string
 	baseURL   string
+	notifyURL string
+	returnURL string
 	http      Doer
 	userAgent string
 }
@@ -51,11 +54,29 @@ func WithUserAgent(userAgent string) Option {
 	}
 }
 
+func ConfigFromEnv() Config {
+	return Config{
+		AppID:     strings.TrimSpace(os.Getenv("XORPAY_APP_ID")),
+		AppSecret: strings.TrimSpace(os.Getenv("XORPAY_APP_SECRET")),
+		NotifyURL: strings.TrimSpace(os.Getenv("XORPAY_NOTIFY_URL")),
+		ReturnURL: strings.TrimSpace(os.Getenv("XORPAY_RETURN_URL")),
+	}
+}
+
 func NewClient(cfg Config, opts ...Option) (*Client, error) {
-	if strings.TrimSpace(cfg.AppID) == "" {
+	appID := strings.TrimSpace(cfg.AppID)
+	if appID == "" {
+		appID = strings.TrimSpace(os.Getenv("XORPAY_APP_ID"))
+	}
+	if appID == "" {
 		return nil, errors.New("appid is required")
 	}
-	if strings.TrimSpace(cfg.AppSecret) == "" {
+
+	appSecret := strings.TrimSpace(cfg.AppSecret)
+	if appSecret == "" {
+		appSecret = strings.TrimSpace(os.Getenv("XORPAY_APP_SECRET"))
+	}
+	if appSecret == "" {
 		return nil, errors.New("app secret is required")
 	}
 
@@ -65,9 +86,11 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	}
 
 	c := &Client{
-		appID:     cfg.AppID,
-		appSecret: cfg.AppSecret,
+		appID:     appID,
+		appSecret: appSecret,
 		baseURL:   strings.TrimRight(baseURL, "/"),
+		notifyURL: strings.TrimSpace(cfg.NotifyURL),
+		returnURL: strings.TrimSpace(cfg.ReturnURL),
 		http: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -85,6 +108,12 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 }
 
 func (c *Client) CreatePay(ctx context.Context, req PayRequest) (*PayResponse, error) {
+	if strings.TrimSpace(req.NotifyURL) == "" && c.notifyURL != "" {
+		req.NotifyURL = c.notifyURL
+	}
+	if strings.TrimSpace(req.ReturnURL) == "" && c.returnURL != "" {
+		req.ReturnURL = c.returnURL
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -103,6 +132,12 @@ func (c *Client) CreatePay(ctx context.Context, req PayRequest) (*PayResponse, e
 }
 
 func (c *Client) CreateCashier(ctx context.Context, req CashierRequest) (*CashierResponse, error) {
+	if strings.TrimSpace(req.NotifyURL) == "" && c.notifyURL != "" {
+		req.NotifyURL = c.notifyURL
+	}
+	if strings.TrimSpace(req.ReturnURL) == "" && c.returnURL != "" {
+		req.ReturnURL = c.returnURL
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -121,6 +156,9 @@ func (c *Client) CreateCashier(ctx context.Context, req CashierRequest) (*Cashie
 }
 
 func (c *Client) CreateBarcodePay(ctx context.Context, req BarcodePayRequest) (*BarcodePayResponse, error) {
+	if strings.TrimSpace(req.NotifyURL) == "" && c.notifyURL != "" {
+		req.NotifyURL = c.notifyURL
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}

@@ -25,6 +25,10 @@ func main() {
 		}
 
 		// TODO: process your business order here.
+		// Production notes:
+		//   - Persist aoid/order_id mapping to a database, not in-memory maps.
+		//   - Handle notify callbacks idempotently: check if the order is already
+		//     marked paid before updating; return "ok" even if duplicated.
 		_, _ = w.Write([]byte("ok"))
 	})
 

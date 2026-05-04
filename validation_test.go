@@ -18,6 +18,8 @@ func TestRequestValidation(t *testing.T) {
 }
 
 func TestNewClientValidation(t *testing.T) {
+	t.Setenv("XORPAY_APP_ID", "")
+	t.Setenv("XORPAY_APP_SECRET", "")
 	if _, err := NewClient(Config{}); err == nil {
 		t.Fatal("expected NewClient validation error")
 	}

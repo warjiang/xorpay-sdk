@@ -164,6 +164,27 @@ func TestBuildOpenIDAndQR(t *testing.T) {
 	}
 }
 
+func TestConfigFromEnv(t *testing.T) {
+	t.Setenv("XORPAY_APP_ID", "env-id")
+	t.Setenv("XORPAY_APP_SECRET", "env-secret")
+	t.Setenv("XORPAY_NOTIFY_URL", "https://example.com/notify")
+	t.Setenv("XORPAY_RETURN_URL", "https://example.com/return")
+
+	cfg := ConfigFromEnv()
+	if cfg.AppID != "env-id" {
+		t.Fatalf("appid=%s", cfg.AppID)
+	}
+	if cfg.AppSecret != "env-secret" {
+		t.Fatalf("secret=%s", cfg.AppSecret)
+	}
+	if cfg.NotifyURL != "https://example.com/notify" {
+		t.Fatalf("notify_url=%s", cfg.NotifyURL)
+	}
+	if cfg.ReturnURL != "https://example.com/return" {
+		t.Fatalf("return_url=%s", cfg.ReturnURL)
+	}
+}
+
 func TestDoJSONBadResponse(t *testing.T) {
 	client, ts := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
