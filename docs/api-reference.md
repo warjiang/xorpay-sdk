@@ -7,9 +7,18 @@ client, err := xorpay.NewClient(cfg, opts...)
 ```
 
 `cfg` fields:
-- `AppID` required
-- `AppSecret` required
+- `AppID` required (falls back to `XORPAY_APP_ID` env var)
+- `AppSecret` required (falls back to `XORPAY_APP_SECRET` env var)
 - `BaseURL` optional (default: `https://xorpay.com`)
+- `NotifyURL` optional (default notify URL for payment APIs)
+- `ReturnURL` optional (default return URL for cashier/jsapi)
+
+Load from environment variables:
+
+```go
+cfg := xorpay.ConfigFromEnv() // reads XORPAY_APP_ID, XORPAY_APP_SECRET, XORPAY_NOTIFY_URL, XORPAY_RETURN_URL
+client, err := xorpay.NewClient(cfg, opts...)
+```
 
 Options:
 - `WithHTTPClient(doer)`
@@ -29,11 +38,11 @@ Required fields:
 - `PayType`
 - `Price`
 - `OrderID`
-- `NotifyURL`
+- `NotifyURL` (falls back to client-level default if set)
 
 Optional:
 - `OrderUID`
-- `ReturnURL`
+- `ReturnURL` (falls back to client-level default if set)
 - `OpenID`
 - `AppID` (for mini program scene)
 - `IsMini`
@@ -49,11 +58,11 @@ Required fields:
 - `PayType`
 - `Price`
 - `OrderID`
-- `NotifyURL`
+- `NotifyURL` (falls back to client-level default if set)
 
 Optional:
 - `OrderUID`
-- `ReturnURL`
+- `ReturnURL` (falls back to client-level default if set)
 
 ### CreateBarcodePay
 
@@ -66,7 +75,7 @@ Required fields:
 - `PayType`
 - `Price`
 - `OrderID`
-- `NotifyURL`
+- `NotifyURL` (falls back to client-level default if set)
 - `Barcode`
 
 ## Query APIs

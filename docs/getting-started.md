@@ -3,14 +3,22 @@
 ## 1. Create client
 
 ```go
+client, err := xorpay.NewClient(xorpay.ConfigFromEnv())
+```
+
+Or pass explicitly:
+
+```go
 client, err := xorpay.NewClient(xorpay.Config{
-    AppID:     os.Getenv("XORPAY_APP_ID"),
-    AppSecret: os.Getenv("XORPAY_APP_SECRET"),
+    AppID:     "704046",
+    AppSecret: "8d15136f11f3458a91dfe84a0145c612",
 })
 ```
 
-- `AppID`: your XorPay `aid` (for tests: `704046`)
-- `AppSecret`: your app secret (for tests: `8d15136f11f3458a91dfe84a0145c612`)
+- `AppID`: your XorPay `aid` (falls back to `XORPAY_APP_ID` env var)
+- `AppSecret`: your app secret (falls back to `XORPAY_APP_SECRET` env var)
+- `NotifyURL`: default notify URL (read from `XORPAY_NOTIFY_URL` via `ConfigFromEnv()`)
+- `ReturnURL`: default return URL for cashier/jsapi (read from `XORPAY_RETURN_URL` via `ConfigFromEnv()`)
 - Optional: `WithBaseURL(...)`, `WithHTTPClient(...)`, `WithUserAgent(...)`
 
 ## 2. Signature rules
@@ -28,7 +36,7 @@ All are lowercase MD5 over plain concatenated values.
 ## 3. Typical flow
 
 1. Create order (`CreatePay` or `CreateCashier`)
-2. Persist `aoid` and merchant `order_id`
+2. Persist `aoid` and merchant `order_id` to **database** (do not use in-memory maps in production)
 3. Receive notify callback and call `VerifyNotify`
 4. If needed, query by `aoid` or `order_id`
 5. Refund by `aoid`
@@ -45,7 +53,12 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // process business logic
+    // Production checklist:
+    // 1. Query the database by payload.OrderID (or payload.AOID).
+    // 2. If the order is already marked as paid, return "ok" immediately (idempotency).
+    // 3. Otherwise, update the order status in a transaction and return "ok" only on success.
+    // 4. Do NOT process business logic before signature verification.
+
     _, _ = w.Write([]byte("ok"))
 }
 ```
