@@ -6,7 +6,7 @@ import (
 )
 
 func TestVerifyNotify(t *testing.T) {
-	client, err := NewClient(Config{AppID: "704046", AppSecret: "8d15136f11f3458a91dfe84a0145c612"})
+	client, err := NewClient(Config{AppID: "mock_appid", AppSecret: "mock_secret"})
 	if err != nil {
 		t.Fatalf("NewClient error: %v", err)
 	}
@@ -17,7 +17,7 @@ func TestVerifyNotify(t *testing.T) {
 		PayPrice: "50.00",
 		PayTime:  "1714694422",
 	}
-	payload.Sign = SignNotify(payload.AOID, payload.OrderID, payload.PayPrice, payload.PayTime, "8d15136f11f3458a91dfe84a0145c612")
+	payload.Sign = SignNotify(payload.AOID, payload.OrderID, payload.PayPrice, payload.PayTime, "mock_secret")
 
 	if err := client.VerifyNotify(payload); err != nil {
 		t.Fatalf("VerifyNotify error: %v", err)

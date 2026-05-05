@@ -10,8 +10,8 @@ Or pass explicitly:
 
 ```go
 client, err := xorpay.NewClient(xorpay.Config{
-    AppID:     "704046",
-    AppSecret: "8d15136f11f3458a91dfe84a0145c612",
+    AppID:     "mock_appid",
+    AppSecret: "mock_secret",
 })
 ```
 

@@ -13,7 +13,7 @@ import (
 func newTestClient(t *testing.T, handler http.HandlerFunc) (*Client, *httptest.Server) {
 	t.Helper()
 	ts := httptest.NewServer(handler)
-	c, err := NewClient(Config{AppID: "704046", AppSecret: "8d15136f11f3458a91dfe84a0145c612"}, WithBaseURL(ts.URL))
+	c, err := NewClient(Config{AppID: "mock_appid", AppSecret: "mock_secret"}, WithBaseURL(ts.URL))
 	if err != nil {
 		t.Fatalf("NewClient error: %v", err)
 	}
@@ -25,7 +25,7 @@ func TestCreatePay(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("method=%s", r.Method)
 		}
-		if r.URL.Path != "/api/pay/704046" {
+		if r.URL.Path != "/api/pay/mock_appid" {
 			t.Fatalf("path=%s", r.URL.Path)
 		}
 		if err := r.ParseForm(); err != nil {
@@ -38,7 +38,7 @@ func TestCreatePay(t *testing.T) {
 			r.Form.Get("price"),
 			r.Form.Get("order_id"),
 			r.Form.Get("notify_url"),
-			"8d15136f11f3458a91dfe84a0145c612",
+			"mock_secret",
 		)
 		if got := r.Form.Get("sign"); got != expectedSign {
 			t.Fatalf("sign mismatch: got=%s want=%s", got, expectedSign)
@@ -89,14 +89,14 @@ func TestQueryByOrderID(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Fatalf("method=%s", r.Method)
 		}
-		if r.URL.Path != "/api/query2/704046" {
+		if r.URL.Path != "/api/query2/mock_appid" {
 			t.Fatalf("path=%s", r.URL.Path)
 		}
 		q := r.URL.Query()
 		if q.Get("order_id") != "demo-order" {
 			t.Fatalf("order_id=%s", q.Get("order_id"))
 		}
-		expectedSign := SignQueryByOrderID("demo-order", "8d15136f11f3458a91dfe84a0145c612")
+		expectedSign := SignQueryByOrderID("demo-order", "mock_secret")
 		if q.Get("sign") != expectedSign {
 			t.Fatalf("sign mismatch: got=%s want=%s", q.Get("sign"), expectedSign)
 		}
@@ -124,7 +124,7 @@ func TestRefund(t *testing.T) {
 		if r.Form.Get("price") != "0.01" {
 			t.Fatalf("price=%s", r.Form.Get("price"))
 		}
-		expected := SignRefund("0.01", "8d15136f11f3458a91dfe84a0145c612")
+		expected := SignRefund("0.01", "mock_secret")
 		if r.Form.Get("sign") != expected {
 			t.Fatalf("sign mismatch")
 		}
@@ -138,7 +138,7 @@ func TestRefund(t *testing.T) {
 }
 
 func TestBuildOpenIDAndQR(t *testing.T) {
-	client, err := NewClient(Config{AppID: "704046", AppSecret: "secret"}, WithBaseURL("https://xorpay.com"))
+	client, err := NewClient(Config{AppID: "mock_appid", AppSecret: "secret"}, WithBaseURL("https://xorpay.com"))
 	if err != nil {
 		t.Fatalf("NewClient error: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestBuildOpenIDAndQR(t *testing.T) {
 	if err != nil {
 		t.Fatalf("url parse error: %v", err)
 	}
-	if u.Path != "/api/openid/704046" {
+	if u.Path != "/api/openid/mock_appid" {
 		t.Fatalf("path=%s", u.Path)
 	}
 	if u.Query().Get("callback") != "https://merchant.test/callback?a=1" {
